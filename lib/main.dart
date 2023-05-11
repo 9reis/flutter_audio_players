@@ -54,6 +54,7 @@ class _AudioPlayerScreenState extends State<AudioPlayerScreen> {
   void initState() {
     super.initState();
     _audioPlayer = AudioPlayer()..setAsset('assets/audio/Foco1.mp3');
+    // _audioPlayer = AudioPlayer()..setUrl(url);
   }
 
   @override
