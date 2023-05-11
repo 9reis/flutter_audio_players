@@ -13,10 +13,23 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Flutter Demo',
       theme: ThemeData(
-       
         primarySwatch: Colors.blue,
       ),
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
+      home: Home('Flutter Demo Home Page'),
+    );
+  }
+}
+
+class Home extends StatelessWidget {
+  Home(this._text, {super.key});
+
+  String _text;
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Container(
+        child: Text(_text),
+      ),
     );
   }
 }
