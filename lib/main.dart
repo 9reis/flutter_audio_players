@@ -1,6 +1,8 @@
 import 'package:audio_video_progress_bar/audio_video_progress_bar.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:just_audio/just_audio.dart';
+import 'package:just_audio_background/just_audio_background.dart';
 import 'package:rxdart/rxdart.dart';
 
 void main() {
@@ -41,6 +43,42 @@ class AudioPlayerScreen extends StatefulWidget {
 class _AudioPlayerScreenState extends State<AudioPlayerScreen> {
   late AudioPlayer _audioPlayer;
 
+  final _playList = ConcatenatingAudioSource(children: [
+    AudioSource.uri(
+      Uri.parse(''),
+      tag: MediaItem(
+        id: '0',
+        title: 'Nature Sound',
+        artist: 'Public Domain',
+        artUri: Uri.parse(
+          uri,
+        ),
+      ),
+    ),
+    AudioSource.uri(
+      Uri.parse(''),
+      tag: MediaItem(
+        id: '0',
+        title: 'Nature Sound',
+        artist: 'Public Domain',
+        artUri: Uri.parse(
+          uri,
+        ),
+      ),
+    ),
+    AudioSource.uri(
+      Uri.parse(''),
+      tag: MediaItem(
+        id: '0',
+        title: 'Nature Sound',
+        artist: 'Public Domain',
+        artUri: Uri.parse(
+          uri,
+        ),
+      ),
+    ),
+  ]);
+
   Stream<PositionData> get _positionDataStream =>
       Rx.combineLatest3<Duration, Duration, Duration?, PositionData>(
         _audioPlayer.positionStream,
@@ -55,6 +93,12 @@ class _AudioPlayerScreenState extends State<AudioPlayerScreen> {
     super.initState();
     _audioPlayer = AudioPlayer()..setAsset('assets/audio/Foco1.mp3');
     // _audioPlayer = AudioPlayer()..setUrl(url);
+    _init();
+  }
+
+  Future<void> _init() async {
+    await _audioPlayer.setLoopMode(LoopMode.all);
+    await _audioPlayer.setAudioSource(_playList);
   }
 
   @override
@@ -98,6 +142,21 @@ class _AudioPlayerScreenState extends State<AudioPlayerScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
+            StreamBuilder(
+              stream: _audioPlayer.sequenceStateStream,
+              builder: (context, snapshot) {
+                final state = snapshot.data;
+                if (state?.sequence.isEmpty ?? true) {
+                  return const SizedBox();
+                }
+                final metadata = state!.currentSource!.tag as MediaItem;
+                return MediaMetaData(
+                  imageUrl: metadata.artUri.toString(),
+                  artist: metadata.artist ?? '',
+                  title: metadata.title,
+                );
+              },
+            ),
             StreamBuilder<PositionData>(
               stream: _positionDataStream,
               builder: (context, snapshot) {
@@ -127,6 +186,66 @@ class _AudioPlayerScreenState extends State<AudioPlayerScreen> {
   }
 }
 
+class MediaMetaData extends StatelessWidget {
+  const MediaMetaData(
+      {required this.imageUrl, required this.title, required this.artist});
+
+  final String imageUrl;
+  final String title;
+  final String artist;
+
+  @override
+  Widget build(BuildContext context) {
+    throw UnimplementedError();
+
+    // ignore: dead_code
+    return Column(
+      children: [
+        DecoratedBox(
+          decoration: BoxDecoration(
+            boxShadow: const [
+              BoxShadow(
+                color: Colors.black12,
+                offset: Offset(2, 4),
+                blurRadius: 4,
+              ),
+            ],
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(10),
+            child: CachedNetworkImage(
+              imageUrl: imageUrl,
+              height: 300,
+              width: 300,
+              fit: BoxFit.cover,
+            ),
+          ),
+        ),
+        SizedBox(height: 20),
+        Text(
+          title,
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 22,
+            fontWeight: FontWeight.bold,
+          ),
+          textAlign: TextAlign.center,
+        ),
+        SizedBox(height: 8),
+        Text(
+          artist,
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 20,
+          ),
+          textAlign: TextAlign.center,
+        ),
+      ],
+    );
+  }
+}
+
 class Controls extends StatelessWidget {
   const Controls({super.key, required this.audioPlayer});
 
@@ -134,34 +253,51 @@ class Controls extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<PlayerState>(
-      stream: audioPlayer.playerStateStream,
-      builder: (context, snapshot) {
-        final playerState = snapshot.data;
-        final processingState = playerState?.processingState;
-        final playing = playerState?.playing;
-
-        if (!(playing ?? false)) {
-          return IconButton(
-            onPressed: audioPlayer.play,
-            icon: Icon(Icons.play_arrow_rounded),
-            iconSize: 80,
-            color: Colors.white,
-          );
-        } else if (processingState != ProcessingState.completed) {
-          return IconButton(
-            onPressed: audioPlayer.pause,
-            icon: Icon(Icons.pause_rounded),
-            iconSize: 80,
-            color: Colors.white,
-          );
-        }
-        return Icon(
-          Icons.play_arrow_rounded,
-          size: 80,
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        IconButton(
+          onPressed: audioPlayer.seekToPrevious,
+          icon: Icon(Icons.skip_previous_rounded),
+          iconSize: 60,
           color: Colors.white,
-        );
-      },
+        ),
+        StreamBuilder<PlayerState>(
+          stream: audioPlayer.playerStateStream,
+          builder: (context, snapshot) {
+            final playerState = snapshot.data;
+            final processingState = playerState?.processingState;
+            final playing = playerState?.playing;
+
+            if (!(playing ?? false)) {
+              return IconButton(
+                onPressed: audioPlayer.play,
+                icon: Icon(Icons.play_arrow_rounded),
+                iconSize: 80,
+                color: Colors.white,
+              );
+            } else if (processingState != ProcessingState.completed) {
+              return IconButton(
+                onPressed: audioPlayer.pause,
+                icon: Icon(Icons.pause_rounded),
+                iconSize: 80,
+                color: Colors.white,
+              );
+            }
+            return Icon(
+              Icons.play_arrow_rounded,
+              size: 80,
+              color: Colors.white,
+            );
+          },
+        ),
+        IconButton(
+          onPressed: audioPlayer.seekToPrevious,
+          icon: Icon(Icons.skip_next_rounded),
+          iconSize: 60,
+          color: Colors.white,
+        ),
+      ],
     );
   }
 }
